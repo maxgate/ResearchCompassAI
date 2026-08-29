@@ -1,2 +1,9 @@
-print("Research Compass AI")
-print("Developemt Document is Working")
+def main():
+    print("================================")
+    print("      RESEARCH COMPASS AI")
+    print("================================")
+    print("Development environment ready!")
+
+
+if __name__ == "__main__":
+    main()
