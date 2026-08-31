@@ -84,8 +84,36 @@ class ProjectWizard(QDialog):
         layout.addWidget(discipline_label)
         layout.addWidget(self.discipline_input)
 
+      
+         # Research type
+        research_type_label = QLabel(
+            "What type of research are you conducting?"
+        )
+
+        self.research_type_input = QComboBox()
+
+        self.research_type_input.addItems(
+            [
+                "Select a research type",
+                "Quantitative",
+                "Qualitative",
+                "Mixed Methods",
+                "Experimental",
+                "Descriptive",
+                "Exploratory",
+                "Theoretical / Conceptual",
+                "Applied Research",
+                "Other",
+            ]
+        )
+
+        layout.addWidget(research_type_label)
+        layout.addWidget(self.research_type_input)
+
         layout.addStretch()
         layout.addWidget(buttons)
+
+
 
 
     def validate_input(self):
@@ -102,11 +130,21 @@ class ProjectWizard(QDialog):
              )
              return False
 
-        if discipline == "Select a discipline":
+        if discipline == "Select a discipline": 
+            QMessageBox.warning( 
+                self, 
+                "Missing Discipline", 
+                "Please select a research discipline.", 
+            ) 
+            return False
+
+        research_type = self.research_type_input.currentText()
+
+        if research_type == "Select a research type":
            QMessageBox.warning(
                 self,
                 "Missing Discipline",
-                "Please select a research discipline.",
+                "Please select a research type.",
             )
            return False
         

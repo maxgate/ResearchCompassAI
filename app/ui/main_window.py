@@ -108,6 +108,7 @@ class MainWindow(QMainWindow):
             project = ResearchProject(
                 title=wizard.topic_input.text().strip(),
                 discipline=wizard.discipline_input.currentText(),
+                research_type=wizard.research_type_input.currentText(),
             )
 
             print("\nResearch Project Created")
