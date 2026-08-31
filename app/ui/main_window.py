@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 
 from app.ui.wizard.project_wizard import ProjectWizard
 from app.models.research_project import ResearchProject
-
+from app.services.methodology_engine import recommend_methodology
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -111,8 +111,31 @@ class MainWindow(QMainWindow):
                 research_type=wizard.research_type_input.currentText(),
             )
 
+            recommendation = recommend_methodology(project) 
+
             print("\nResearch Project Created")
             print("------------------------")
             print(project.summary())
+        
+            print("\nMethodology Recommendation") 
+            print("--------------------------") 
+            print( 
+                f"Methodology: " 
+                f"{recommendation['methodology']}" 
+            ) 
+            print( 
+                f"Research Design: " 
+                f"{recommendation['research_design']}" 
+            ) 
+            print( 
+                f"Confidence: " 
+                f"{recommendation['confidence']:.0%}" 
+            ) 
+            print( f"Reason: " 
+                  f"{recommendation['reason']}"
+            )
+
+
+           
 
     
