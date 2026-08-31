@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui.wizard.project_wizard import ProjectWizard
+from app.models.research_project import ResearchProject
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -98,12 +100,18 @@ class MainWindow(QMainWindow):
         return content
 
     def create_project(self):
-        """Open the project creation wizard."""
+        """Open the project wizard and create a research project."""
+
         wizard = ProjectWizard(self)
 
         if wizard.exec():
-            topic = wizard.topic_input.text()
+            project = ResearchProject(
+                title=wizard.topic_input.text().strip(),
+                discipline=wizard.discipline_input.currentText(),
+            )
 
-            print("Research topic:", topic)
+            print("\nResearch Project Created")
+            print("------------------------")
+            print(project.summary())
 
     
