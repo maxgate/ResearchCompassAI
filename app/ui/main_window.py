@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 from app.ui.wizard.project_wizard import ProjectWizard
 from app.models.research_project import ResearchProject
 from app.services.methodology_engine import recommend_methodology
+from app.ui.methodology_dialog import MethodologyDialog
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -111,7 +112,14 @@ class MainWindow(QMainWindow):
                 research_type=wizard.research_type_input.currentText(),
             )
 
-            recommendation = recommend_methodology(project) 
+            recommendation = recommend_methodology(project)
+
+            dialog = MethodologyDialog(
+                recommendation,
+                self,
+            ) 
+            
+            dialog.exec()
 
             print("\nResearch Project Created")
             print("------------------------")
