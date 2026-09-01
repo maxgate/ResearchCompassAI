@@ -15,6 +15,8 @@ from app.ui.wizard.project_wizard import ProjectWizard
 from app.models.research_project import ResearchProject
 from app.services.methodology_engine import recommend_methodology
 from app.ui.methodology_dialog import MethodologyDialog
+from app.ui.research_interview_dialog import ResearchInterviewDialog
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -105,43 +107,82 @@ class MainWindow(QMainWindow):
 
         wizard = ProjectWizard(self)
 
-        if wizard.exec():
-            project = ResearchProject(
+        if not wizard.exec():
+            return
+        
+        project = ResearchProject(
                 title=wizard.topic_input.text().strip(),
                 discipline=wizard.discipline_input.currentText(),
                 research_type=wizard.research_type_input.currentText(),
             )
 
-            recommendation = recommend_methodology(project)
+        recommendation = recommend_methodology(project)
 
-            dialog = MethodologyDialog(
+        project.methodology = recommendation["methodology"]
+        project.research_design = recommendation["research_design"]
+
+
+        methodology_dialog = MethodologyDialog(
                 recommendation,
                 self,
             ) 
-            
-            dialog.exec()
 
-            print("\nResearch Project Created")
-            print("------------------------")
-            print(project.summary())
-        
-            print("\nMethodology Recommendation") 
-            print("--------------------------") 
-            print( 
-                f"Methodology: " 
-                f"{recommendation['methodology']}" 
-            ) 
-            print( 
-                f"Research Design: " 
-                f"{recommendation['research_design']}" 
-            ) 
-            print( 
-                f"Confidence: " 
-                f"{recommendation['confidence']:.0%}" 
-            ) 
-            print( f"Reason: " 
-                  f"{recommendation['reason']}"
+        methodology_dialog.exec()
+
+
+        interview_dialog = ResearchInterviewDialog(
+                project,
+                self,
             )
+
+        if not interview_dialog.exec():
+                return
+
+        project.interview = interview_dialog.interview
+
+        print("\nResearch Profile") 
+        print("----------------") 
+
+        print(f"Title: {project.title}") 
+        print(f"Discipline: {project.discipline}") 
+        print(f"Research Type: {project.research_type}") 
+        print(f"Methodology: {project.methodology}") 
+        print(f"Research Design: {project.research_design}")
+
+
+        print("\nResearch Interview")
+        print("-----------------")
+
+        print( 
+                    f"Problem: "
+                    f"{project.interview.problem_statement}" 
+                ) 
+
+        print( 
+                    f"Aim: "
+                    f"{project.interview.aim}" 
+                ) 
+
+        print( 
+                    f"Population: "
+                    f"{project.interview.population}" 
+                ) 
+
+        print( 
+                    f"Data Source: "
+                    f"{project.interview.data_source}" 
+            ) 
+
+        print( 
+                    f"Expected Outcome: " 
+                    f"{project.interview.expected_outcome}" 
+            )
+
+        print(
+                    f"Additional Information: "
+                    f"{project.interview.additional_information}"
+            )
+
 
 
            

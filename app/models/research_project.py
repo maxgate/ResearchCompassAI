@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from app.models.research_interview import ResearchInterview
 
 
 @dataclass
@@ -13,10 +14,10 @@ class ResearchProject:
     research_type: str = ""
     methodology: str = ""
     research_design: str = ""
-    objectives: list[str] = field(default_factory=list)
-    research_questions: list[str] = field(default_factory=list)
-    hypotheses: list[str] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.now)
+    
+    interview: ResearchInterview = field(
+        default_factory=ResearchInterview
+    )
 
     def summary(self) -> str:
         """Return a short summary of the research project."""
