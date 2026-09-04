@@ -52,5 +52,23 @@ class DatabaseManager:
                 """
             )
 
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS research_interviews (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    project_id INTEGER NOT NULL,
+                    problem_statement TEXT NOT NULL,
+                    aim TEXT NOT NULL,
+                    population TEXT NOT NULL,
+                    data_source TEXT NOT NULL,
+                    expected_outcome TEXT NOT NULL,
+                    additional_information TEXT,
+                    FOREIGN KEY (project_id)
+                        REFERENCES projects(id)
+                        ON DELETE CASCADE
+                )
+                """
+            )
+
             connection.commit()
 

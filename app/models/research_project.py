@@ -14,6 +14,7 @@ class ResearchProject:
     research_type: str = ""
     methodology: str = ""
     research_design: str = ""
+    id: int | None = None
     
     interview: ResearchInterview = field(
         default_factory=ResearchInterview
