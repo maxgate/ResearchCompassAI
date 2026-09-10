@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
+from app.ui.project_workspace import ProjectWorkspace
 
 class ProjectsView(QWidget):
     """Display and manage saved research projects."""
@@ -111,6 +111,12 @@ class ProjectsView(QWidget):
         buttons_layout = QHBoxLayout()
 
         open_button = QPushButton("Open")
+
+        open_button.clicked.connect(
+        lambda checked=False, project=project:
+            self.open_project(project)
+        )
+
         edit_button = QPushButton("Edit")
         delete_button = QPushButton("Delete")
 
@@ -129,6 +135,23 @@ class ProjectsView(QWidget):
         layout.addLayout(buttons_layout)
 
         self.projects_container.addWidget(card)
+
+
+    def open_project(self, project):
+            """Open the selected research project workspace."""
+    
+            self.workspace = ProjectWorkspace(
+            project,
+            )
+            self.workspace.setWindowTitle(
+                f"ResearchCompassAI - {project.title}"
+            )
+
+            self.workspace.resize(1000, 700)
+            self.workspace.show()    
+            self.workspace.raise_()
+            self.workspace.activateWindow()
+
 
     def delete_project(self, project_id):
         """Delete a project after asking the user for confirmation."""
