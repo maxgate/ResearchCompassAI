@@ -8,9 +8,13 @@ from PySide6.QtWidgets import (
     QPushButton,
     QStackedWidget,
     QVBoxLayout,
-    QWidget,    
+    QWidget,
 )
 
+from app.database.database import DatabaseManager
+from app.database.literature_repository import LiteratureRepository
+from app.ui.literature_view import LiteratureView
+from app.ui.literature_search_view import LiteratureSearchView
 
 class ProjectWorkspace(QWidget):
     """Display the workspace for a single research project."""
@@ -19,6 +23,15 @@ class ProjectWorkspace(QWidget):
         super().__init__(parent)
 
         self.project = project
+
+         # Connect this workspace to the database.
+        self.database = DatabaseManager()
+        self.database.initialize()
+
+        # Repository responsible for literature database operations.
+        self.literature_repository = LiteratureRepository(
+            self.database
+        )
 
         self.setup_ui()
 
@@ -36,6 +49,7 @@ class ProjectWorkspace(QWidget):
         sections = [
             "📋 Overview",
             "📚 Literature",
+            "🔎 Find Literature",
             "📖 References",
             "✍️ Chapter One",
             "✍️ Chapter Two",
@@ -55,14 +69,42 @@ class ProjectWorkspace(QWidget):
 
         self.content_stack = QStackedWidget()
 
+        # Create pages.
         overview = self.create_overview()
 
-        self.content_stack.addWidget(overview)
+        literature_view = LiteratureView(
+            self.project,
+            self.literature_repository,
+        )
 
-        # Other sections will be implemented later.
+        Literature_search_view = LiteratureSearchView(
+            self.project,
+        )
+
+        self.content_stack.addWidget(overview)
+        self.content_stack.addWidget(literature_view)
+        self.content_stack.addWidget(Literature_search_view)
+
+        # Add temporary pages for the remaining sections.
+        for _ in range(len(sections) - 3):
+            self.content_stack.addWidget(
+                self.create_placeholder()
+            )
+
+        # Connect sidebar navigation.
+        sidebar.currentRowChanged.connect(
+            self.change_section
+        )
+
+        sidebar.setCurrentRow(0)
 
         main_layout.addWidget(sidebar)
         main_layout.addWidget(self.content_stack)
+
+    def change_section(self, index):
+        """Switch the workspace content based on sidebar selection."""
+
+        self.content_stack.setCurrentIndex(index)
 
     def create_overview(self):
         """Create the project overview page."""
@@ -72,7 +114,7 @@ class ProjectWorkspace(QWidget):
         layout = QVBoxLayout(page)
 
         # -----------------------------
-        # Back to dashboard button
+        # Back to dashboard
         # -----------------------------
 
         back_button = QPushButton("← Back to Dashboard")
@@ -80,19 +122,39 @@ class ProjectWorkspace(QWidget):
 
         layout.addWidget(back_button)
 
-    # -----------------------------
-        # Project information
+        # -----------------------------
+        # Project title
         # -----------------------------
 
         title = QLabel(self.project.title)
+
         title.setStyleSheet(
             """
-        QLabel {
-            font-size: 26px;
-            font-weight: bold;
-        }
+            QLabel {
+                font-size: 26px;
+                font-weight: bold;
+            }
             """
         )
+
+        layout.addWidget(title)
+
+        # -----------------------------
+        # Research profile
+        # -----------------------------
+
+        profile_title = QLabel("Research Profile")
+
+        profile_title.setStyleSheet(
+            """
+            QLabel {
+                font-size: 20px;
+                font-weight: bold;
+            }
+            """
+        )
+
+        layout.addWidget(profile_title)
 
         profile = QLabel(
             f"""
@@ -103,17 +165,17 @@ class ProjectWorkspace(QWidget):
             """
         )
 
-        layout.addWidget(title)
+        profile.setWordWrap(True)
+
         layout.addWidget(profile)
 
-        layout.addSpacing(20)
-
         # -----------------------------
-        # Research interview
+        # Research progress
         # -----------------------------
 
-        interview_title = QLabel("Research Interview")
-        interview_title.setStyleSheet(
+        progress_title = QLabel("Research Progress")
+
+        progress_title.setStyleSheet(
             """
             QLabel {
                 font-size: 20px;
@@ -122,13 +184,56 @@ class ProjectWorkspace(QWidget):
             """
         )
 
-        layout.addWidget(interview_title)
+        layout.addWidget(progress_title)
 
-        interview_message = QLabel(
-            "Research interview information will appear here."
+        progress = QLabel(
+            """
+            ✓ Research profile created<br>
+            ✓ Methodology recommended<br>
+            ✓ Research interview completed<br>
+            ○ Literature review<br>
+            ○ Chapter One<br>
+            ○ Chapter Two<br>
+            ○ Chapter Three<br>
+            ○ Chapter Four<br>
+            ○ Chapter Five<br>
+            ○ References
+            """
         )
 
-        layout.addWidget(interview_message)
+        layout.addWidget(progress)
+
+        layout.addStretch()
+
+        return page
+
+    def create_placeholder(self):
+        """Create a temporary page for unfinished workspace sections."""
+
+        page = QWidget()
+
+        layout = QVBoxLayout(page)
+
+        title = QLabel("Coming Soon")
+
+        title.setStyleSheet(
+            """
+            QLabel {
+                font-size: 26px;
+                font-weight: bold;
+            }
+            """
+        )
+
+        message = QLabel(
+            "This section will be implemented as we build "
+            "ResearchCompassAI."
+        )
+
+        message.setWordWrap(True)
+
+        layout.addWidget(title)
+        layout.addWidget(message)
 
         layout.addStretch()
 

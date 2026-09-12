@@ -70,5 +70,28 @@ class DatabaseManager:
                 """
             )
 
+            cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS literature (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                authors TEXT NOT NULL,
+                year INTEGER,
+                publication TEXT,
+                doi TEXT,
+                url TEXT,
+                problem TEXT,
+                methodology TEXT,
+                findings TEXT,
+                research_gap TEXT,
+                notes TEXT,
+                FOREIGN KEY (project_id)
+                    REFERENCES projects(id)
+                    ON DELETE CASCADE
+                )
+                """
+            )
+
             connection.commit()
 
