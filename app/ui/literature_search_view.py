@@ -1,6 +1,7 @@
 """Interface for finding relevant academic literature."""
 
 import re
+import requests
 
 from PySide6.QtWidgets import (
     QLabel,
@@ -11,14 +12,20 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.services.openalex_service import OpenAlexService
+
 
 class LiteratureSearchView(QWidget):
     """Collect and prepare an academic literature search request."""
 
-    def __init__(self, project, parent=None):
+    def __init__(self, project, literature_repository, parent=None):
         super().__init__(parent)
 
         self.project = project
+        self.literature_repository = literature_repository
+        self.openalex_service = OpenAlexService()
+
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -78,7 +85,7 @@ class LiteratureSearchView(QWidget):
         layout.addStretch()
 
     def start_search(self):
-        """Prepare simple search terms from the user's request."""
+        """Search OpenAlex using the prepared search terms."""
 
         search_request = self.search_input.toPlainText().strip()
 
@@ -92,16 +99,77 @@ class LiteratureSearchView(QWidget):
 
         search_terms = self.generate_search_terms(search_request)
 
-        formatted_terms = "\n".join(
-            f"• {term}" for term in search_terms
-        )
+        if not search_terms:
+            QMessageBox.warning(
+                self,
+                "Search Error",
+                "Could not generate search terms.",
+            )
+            return
+
+        search_term = search_terms[0]
 
         self.result_label.setText(
-            "Search request received.\n\n"
-            f"Prepared search terms:\n{formatted_terms}\n\n"
-            "The next stage will send these terms to academic "
-            "literature databases."
+            "Searching academic literature..."
         )
+
+        try:
+            results = self.openalex_service.search_works(
+                search_term,
+                per_page=10,
+            )
+
+        except requests.RequestException as error:
+            QMessageBox.critical(
+                self,
+                "Academic Search Error",
+                f"Could not connect to OpenAlex.\n\n{error}",
+            )
+            return
+
+        self.display_results(results)
+
+    def display_results(self, results):
+        """Display academic search results."""
+
+        if not results:
+            self.result_label.setText(
+                "No academic works were found for this search."
+            )
+            return
+
+        result_text = (
+            f"<b>Found {len(results)} academic works.</b><br><br>"
+        )
+
+        for number, work in enumerate(results, start=1):
+            title = work.get(
+                "display_name",
+                "Untitled",
+            )
+
+            year = work.get(
+                "publication_year",
+                "Year unavailable",
+            )
+
+            authors = self.openalex_service.extract_authors(
+                work
+            )
+
+            doi = self.openalex_service.extract_doi(
+                work
+            )
+
+            result_text += (
+                f"<b>{number}. {title}</b><br>"
+                f"Authors: {authors or 'Unavailable'}<br>"
+                f"Year: {year}<br>"
+                f"DOI: {doi or 'Unavailable'}<br><br>"
+            )
+
+        self.result_label.setText(result_text)
+        
 
     def generate_search_terms(self, request):
         """Create basic keyword phrases from a search request."""

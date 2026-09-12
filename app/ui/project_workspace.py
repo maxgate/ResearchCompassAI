@@ -79,6 +79,7 @@ class ProjectWorkspace(QWidget):
 
         Literature_search_view = LiteratureSearchView(
             self.project,
+            self.literature_repository,
         )
 
         self.content_stack.addWidget(overview)
