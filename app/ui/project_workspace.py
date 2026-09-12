@@ -72,7 +72,7 @@ class ProjectWorkspace(QWidget):
         # Create pages.
         overview = self.create_overview()
 
-        literature_view = LiteratureView(
+        self.literature_view = LiteratureView(
             self.project,
             self.literature_repository,
         )
@@ -83,7 +83,7 @@ class ProjectWorkspace(QWidget):
         )
 
         self.content_stack.addWidget(overview)
-        self.content_stack.addWidget(literature_view)
+        self.content_stack.addWidget(self.literature_view)
         self.content_stack.addWidget(Literature_search_view)
 
         # Add temporary pages for the remaining sections.
@@ -103,9 +103,13 @@ class ProjectWorkspace(QWidget):
         main_layout.addWidget(self.content_stack)
 
     def change_section(self, index):
-        """Switch the workspace content based on sidebar selection."""
+        """Switch workspace sections and refresh dynamic pages."""
 
         self.content_stack.setCurrentIndex(index)
+
+        # Refresh literature whenever the Literature page is opened.
+        if index == 1:
+            self.literature_view.load_literature()
 
     def create_overview(self):
         """Create the project overview page."""

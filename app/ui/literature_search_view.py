@@ -4,6 +4,7 @@ import re
 import requests
 
 from PySide6.QtWidgets import (
+    QHBoxLayout,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -13,18 +14,23 @@ from PySide6.QtWidgets import (
 )
 
 from app.services.openalex_service import OpenAlexService
+from app.models.literature import Literature
 
 
 class LiteratureSearchView(QWidget):
     """Collect and prepare an academic literature search request."""
 
-    def __init__(self, project, literature_repository, parent=None):
+    def __init__(
+            self, 
+            project, 
+            literature_repository, 
+            parent=None,
+    ):
         super().__init__(parent)
 
         self.project = project
         self.literature_repository = literature_repository
         self.openalex_service = OpenAlexService()
-
 
         self.setup_ui()
 
@@ -70,17 +76,20 @@ class LiteratureSearchView(QWidget):
         )
         layout.addWidget(self.search_input)
 
-        search_button = QPushButton("Prepare Search Terms")
+        search_button = QPushButton("Academic Search Results")
         search_button.clicked.connect(self.start_search)
         layout.addWidget(search_button)
 
-        layout.addWidget(QLabel("Prepared Search Terms"))
+        layout.addWidget(QLabel("Academic Search Results"))
 
         self.result_label = QLabel(
-            "Your prepared search terms will appear here."
+            "Your prepared search results will appear here."
         )
         self.result_label.setWordWrap(True)
         layout.addWidget(self.result_label)
+
+        self.results_layout = QVBoxLayout()
+        layout.addLayout(self.results_layout)
 
         layout.addStretch()
 
@@ -130,7 +139,7 @@ class LiteratureSearchView(QWidget):
         self.display_results(results)
 
     def display_results(self, results):
-        """Display academic search results."""
+        """Display academic works as individual result cards."""
 
         if not results:
             self.result_label.setText(
@@ -138,38 +147,88 @@ class LiteratureSearchView(QWidget):
             )
             return
 
-        result_text = (
-            f"<b>Found {len(results)} academic works.</b><br><br>"
+        self.result_label.setText(
+            f"Found {len(results)} academic works."
         )
 
-        for number, work in enumerate(results, start=1):
-            title = work.get(
-                "display_name",
-                "Untitled",
-            )
+        # Remove previous result cards.
+        while self.results_layout.count():
+            item = self.results_layout.takeAt(0)
 
-            year = work.get(
-                "publication_year",
-                "Year unavailable",
-            )
+            if item.widget():
+                item.widget().deleteLater()
 
-            authors = self.openalex_service.extract_authors(
-                work
-            )
+        for work in results:
+            self.add_result_card(work)
 
-            doi = self.openalex_service.extract_doi(
-                work
-            )
+    def add_result_card(self, work):
+        """Create a card for one academic work."""
 
-            result_text += (
-                f"<b>{number}. {title}</b><br>"
-                f"Authors: {authors or 'Unavailable'}<br>"
-                f"Year: {year}<br>"
-                f"DOI: {doi or 'Unavailable'}<br><br>"
-            )
+        title = work.get(
+            "display_name",
+            "Untitled",
+        )
 
-        self.result_label.setText(result_text)
-        
+        year = work.get(
+            "publication_year",
+            "Year unavailable",
+        )
+
+        authors = self.openalex_service.extract_authors(
+            work
+        )
+
+        doi = self.openalex_service.extract_doi(
+            work
+        )
+
+        url = self.openalex_service.extract_url(
+            work
+        )
+
+        card = QWidget()
+        card_layout = QVBoxLayout(card)
+
+        title_label = QLabel(
+            f"<b>{title}</b>"
+        )
+        title_label.setWordWrap(True)
+
+        metadata = QLabel(
+            f"Authors: {authors or 'Unavailable'}<br>"
+            f"Year: {year}<br>"
+            f"DOI: {doi or 'Unavailable'}"
+        )
+        metadata.setWordWrap(True)
+
+        card_layout.addWidget(title_label)
+        card_layout.addWidget(metadata)
+
+        buttons = QHBoxLayout()
+
+        save_button = QPushButton("Save to Literature")
+
+        save_button.clicked.connect(
+            lambda checked=False, work=work:
+            self.save_literature(work)
+        )
+
+        buttons.addWidget(save_button)
+        buttons.addStretch()
+
+        card_layout.addLayout(buttons)
+
+        card.setStyleSheet(
+            """
+            QWidget {
+                border: 1px solid #cccccc;
+                border-radius: 6px;
+                padding: 8px;
+            }
+            """
+        )
+
+        self.results_layout.addWidget(card)
 
     def generate_search_terms(self, request):
         """Create basic keyword phrases from a search request."""
@@ -232,3 +291,53 @@ class LiteratureSearchView(QWidget):
                 unique_terms.append(term)
 
         return unique_terms
+
+
+    def save_literature(self, work):
+        """Save an OpenAlex work to the project literature."""
+
+        title = work.get(
+            "display_name",
+            "Untitled",
+        )
+
+        authors = self.openalex_service.extract_authors(
+            work
+        )
+
+        year = work.get("publication_year")
+
+        doi = self.openalex_service.extract_doi(
+            work
+        )
+
+        url = self.openalex_service.extract_url(
+            work
+        )
+
+        literature = Literature(
+            project_id=self.project.id,
+            title=title,
+            authors=authors or "Unknown",
+            year=year,
+            publication="",
+            doi=doi,
+            url=url,
+        )
+
+        literature_id = (
+            self.literature_repository.create_literature(
+                literature
+            )
+        )
+
+        QMessageBox.information(
+            self,
+            "Literature Saved",
+            f"'{title}' has been saved to your project literature.",
+        )
+
+        print(
+            "Literature saved from OpenAlex. ID:",
+            literature_id,
+        )
