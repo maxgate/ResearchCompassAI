@@ -9,6 +9,7 @@ class LiteratureRepository:
     def __init__(self, database):
         self.database = database
 
+       
     def create_literature(
         self,
         literature: Literature,
@@ -226,3 +227,105 @@ class LiteratureRepository:
             )
 
             return cursor.rowcount > 0
+
+    def find_duplicate(
+        self,
+        project_id: int,
+        doi: str,
+        title: str,
+    ) -> Literature | None:
+        """Find an existing literature source with the same DOI or title."""
+
+        with self.database.connect() as connection:
+            cursor = connection.cursor()
+
+            # Check DOI first when a DOI is available.
+            if doi:
+                cursor.execute(
+                    """
+                SELECT
+                    id,
+                    project_id,
+                    title,
+                    authors,
+                    year,
+                    publication,
+                    doi,
+                    url,
+                    problem,
+                    methodology,
+                    findings,
+                    research_gap,
+                    notes
+                FROM literature
+                WHERE project_id = ?
+                AND LOWER(TRIM(doi)) = LOWER(TRIM(?))
+                LIMIT 1
+                """,
+                (project_id, doi),
+            )
+
+            row = cursor.fetchone()
+
+            if row is not None:
+                return Literature(
+                    id=row[0],
+                    project_id=row[1],
+                    title=row[2],
+                    authors=row[3],
+                    year=row[4],
+                    publication=row[5],
+                    doi=row[6],
+                    url=row[7],
+                    problem=row[8],
+                    methodology=row[9],
+                    findings=row[10],
+                    research_gap=row[11],
+                    notes=row[12],
+                )
+
+        # If there is no DOI match, check the title.
+        cursor.execute(
+            """
+            SELECT
+                id,
+                project_id,
+                title,
+                authors,
+                year,
+                publication,
+                doi,
+                url,
+                problem,
+                methodology,
+                findings,
+                research_gap,
+                notes
+            FROM literature
+            WHERE project_id = ?
+            AND LOWER(TRIM(title)) = LOWER(TRIM(?))
+            LIMIT 1
+            """,
+            (project_id, title),
+        )
+
+        row = cursor.fetchone()
+
+        if row is None:
+            return None
+
+        return Literature(
+            id=row[0],
+            project_id=row[1],
+            title=row[2],
+            authors=row[3],
+            year=row[4],
+            publication=row[5],
+            doi=row[6],
+            url=row[7],
+            problem=row[8],
+            methodology=row[9],
+            findings=row[10],
+            research_gap=row[11],
+            notes=row[12],
+        )

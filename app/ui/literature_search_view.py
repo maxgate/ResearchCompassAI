@@ -315,6 +315,21 @@ class LiteratureSearchView(QWidget):
             work
         )
 
+        duplicate = self.literature_repository.find_duplicate(
+            self.project.id,
+            doi,
+            title,
+        )
+
+        if duplicate is not None:
+            QMessageBox.information(
+                self,
+                "Already Saved",
+                f"This paper is already in your project literature.\n\n"
+                f"Title: {duplicate.title}",
+            )
+            return
+
         literature = Literature(
             project_id=self.project.id,
             title=title,
