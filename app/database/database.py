@@ -86,6 +86,11 @@ class DatabaseManager:
                 findings TEXT,
                 research_gap TEXT,
                 notes TEXT,
+                abstract TEXT DEFAULT '',
+                citation_count INTEGER DEFAULT 0,
+                topics TEXT DEFAULT '[]',
+                is_open_access INTEGER DEFAULT 0,
+                open_access_url TEXT DEFAULT '',
                 FOREIGN KEY (project_id)
                     REFERENCES projects(id)
                     ON DELETE CASCADE
@@ -94,4 +99,35 @@ class DatabaseManager:
             )
 
             connection.commit()
+
+            self.migrate_literature_table()
+
+
+    
+    def migrate_literature_table(self):
+        """Add new metadata columns to existing literature databases."""
+
+        new_columns = {
+            "abstract": "TEXT DEFAULT ''",
+            "citation_count": "INTEGER DEFAULT 0",
+            "topics": "TEXT DEFAULT '[]'",
+            "is_open_access": "INTEGER DEFAULT 0",
+            "open_access_url": "TEXT DEFAULT ''",
+        }
+
+        with self.connect() as connection:
+            cursor = connection.cursor()
+
+            cursor.execute("PRAGMA table_info(literature)")
+            existing_columns = {
+                row[1] for row in cursor.fetchall()
+            }
+
+            for column_name, column_type in new_columns.items():
+                if column_name not in existing_columns:
+                    cursor.execute(
+                        f"ALTER TABLE literature ADD COLUMN "
+                        f"{column_name} {column_type}"
+                    )
+
 

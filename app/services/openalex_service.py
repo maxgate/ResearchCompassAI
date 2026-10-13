@@ -1,3 +1,4 @@
+
 """Service for searching scholarly works through OpenAlex."""
 
 import requests
@@ -14,12 +15,18 @@ class OpenAlexService:
         params = {
             "search": search_term,
             "per-page": per_page,
+            "select": (
+                "id,doi,title,display_name,publication_year,"
+                "publication_date,authorships,primary_location,"
+                "best_oa_location,open_access,cited_by_count,"
+                "type,abstract_inverted_index,keywords,topics"
+            ),
         }
 
         response = requests.get(
             self.BASE_URL,
             params=params,
-            timeout=15,
+            timeout=20,
         )
 
         response.raise_for_status()
@@ -45,24 +52,94 @@ class OpenAlexService:
 
     @staticmethod
     def extract_doi(work):
-        """Extract the DOI from an OpenAlex work."""
+        """Extract the DOI without its URL prefix."""
 
         doi = work.get("doi")
 
         if not doi:
             return ""
 
-        return doi.replace("https://doi.org/", "")
+        return doi.replace("https://doi.org/", "").strip()
 
     @staticmethod
     def extract_url(work):
-        """Extract the best available URL for the work."""
+        """Return the best available publication URL."""
 
         primary_location = work.get("primary_location") or {}
+        best_oa_location = work.get("best_oa_location") or {}
 
-        landing_page = primary_location.get("landing_page_url")
+        return (
+            best_oa_location.get("landing_page_url")
+            or primary_location.get("landing_page_url")
+            or work.get("id", "")
+        )
 
-        if landing_page:
-            return landing_page
+    @staticmethod
+    def extract_publication(work):
+        """Extract the journal, conference, or other source name."""
 
-        return work.get("id", "")
+        primary_location = work.get("primary_location") or {}
+        source = primary_location.get("source") or {}
+
+        return source.get("display_name", "")
+
+    @staticmethod
+    def extract_citation_count(work):
+        """Return the number of citations recorded by OpenAlex."""
+
+        return work.get("cited_by_count", 0)
+
+    @staticmethod
+    def extract_abstract(work):
+        """Reconstruct an abstract from OpenAlex's inverted index."""
+
+        inverted_index = work.get("abstract_inverted_index")
+
+        if not inverted_index:
+            return ""
+
+        word_positions = []
+
+        for word, positions in inverted_index.items():
+            for position in positions:
+                word_positions.append((position, word))
+
+        word_positions.sort(key=lambda item: item[0])
+
+        return " ".join(
+            word for _, word in word_positions
+        )
+
+    @staticmethod
+    def extract_topics(work):
+        """Extract topic labels assigned to a scholarly work."""
+
+        topics = []
+
+        for topic in work.get("topics", []):
+            name = topic.get("display_name")
+
+            if name:
+                topics.append(name)
+
+        return topics
+
+    @staticmethod
+    def extract_open_access_url(work):
+        """Return an available open-access landing page or PDF URL."""
+
+        best_oa_location = work.get("best_oa_location") or {}
+
+        return (
+            best_oa_location.get("pdf_url")
+            or best_oa_location.get("landing_page_url")
+            or ""
+        )
+
+    @staticmethod
+    def is_open_access(work):
+        """Check OpenAlex's open-access indicator."""
+
+        open_access = work.get("open_access") or {}
+
+        return bool(open_access.get("is_oa", False))
